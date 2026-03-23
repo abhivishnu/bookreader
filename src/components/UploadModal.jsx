@@ -39,7 +39,9 @@ export default function UploadModal({ userId, onAdd, onClose }) {
     setUploading(true)
     try {
       const fileUrl = await uploadToR2(file, userId, setProgress)
-      const format = file.name.toLowerCase().endsWith('.epub') ? 'epub' : 'pdf'
+      const lname = file.name.toLowerCase()
+      const isEpub = lname.endsWith('.epub') || lname.endsWith('.epu') || file.type === 'application/epub+zip'
+      const format = isEpub ? 'epub' : 'pdf'
       await onAdd({ title: title.trim(), author: author.trim() || null, file_url: fileUrl, format })
       onClose()
     } catch (err) {
