@@ -54,6 +54,27 @@ export async function uploadToR2(file, userId, onProgress) {
 }
 
 /**
+ * Upload a cover image blob to R2.
+ */
+export async function uploadCoverToR2(blob, userId) {
+  const key = `${userId}/covers/${Date.now()}.jpg`
+  const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-upload-url`
+  const fnRes = await fetch(fnUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+    },
+    body: JSON.stringify({ key, contentType: 'image/jpeg' })
+  })
+  if (!fnRes.ok) throw new Error(`Cover upload URL error ${fnRes.status}`)
+  const { presignedUrl } = await fnRes.json()
+  await fetch(presignedUrl, { method: 'PUT', body: blob })
+  return `${R2_PUBLIC_URL}/${key}`
+}
+
+/**
  * Delete a file from R2 via our edge function.
  */
 export async function deleteFromR2(key) {
