@@ -10,7 +10,7 @@ export function useBooks(userId) {
     if (!userId) return
     setLoading(true)
     const { data, error } = await supabase
-      .from('books')
+      .from('books_with_progress')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
@@ -56,5 +56,15 @@ export function useBooks(userId) {
     if (error) throw error
   }
 
-  return { books, loading, error, addBook, deleteBook, refetch: fetchBooks }
+  const updateRating = async (bookId, rating) => {
+    const { error } = await supabase
+      .from('books')
+      .update({ rating })
+      .eq('id', bookId)
+      .eq('user_id', userId)
+    if (error) throw error
+    setBooks(prev => prev.map(b => b.id === bookId ? { ...b, rating } : b))
+  }
+
+  return { books, loading, error, addBook, deleteBook, updateRating, refetch: fetchBooks }
 }

@@ -7,16 +7,29 @@ import UploadModal from '../components/UploadModal'
 
 export default function Library() {
   const { user } = useAuth()
-  const { books, loading, addBook, deleteBook } = useBooks(user?.id)
+  const { books, loading, addBook, deleteBook, updateRating } = useBooks(user?.id)
   const [showUpload, setShowUpload] = useState(false)
   const [search, setSearch] = useState('')
+  const [sortBy, setSortBy] = useState('added')
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
 
-  const filtered = books.filter(b =>
-    b.title.toLowerCase().includes(search.toLowerCase()) ||
-    (b.author || '').toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = books
+    .filter(b =>
+      b.title.toLowerCase().includes(search.toLowerCase()) ||
+      (b.author || '').toLowerCase().includes(search.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (sortBy === 'title') return a.title.localeCompare(b.title)
+      if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0)
+      if (sortBy === 'opened') {
+        if (!a.last_read_at && !b.last_read_at) return 0
+        if (!a.last_read_at) return 1
+        if (!b.last_read_at) return -1
+        return new Date(b.last_read_at) - new Date(a.last_read_at)
+      }
+      return new Date(b.created_at) - new Date(a.created_at)
+    })
 
   async function handleDelete() {
     if (!confirmDelete) return
@@ -41,6 +54,17 @@ export default function Library() {
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{books.length} book{books.length !== 1 ? 's' : ''}</p>
           </div>
           <div className="sm:ml-auto flex gap-3">
+            {/* Sort */}
+            <select
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value)}
+              className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            >
+              <option value="added">Recently added</option>
+              <option value="opened">Last opened</option>
+              <option value="title">Title A–Z</option>
+              <option value="rating">Rating</option>
+            </select>
             {/* Search */}
             <div className="relative">
               <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -94,7 +118,7 @@ export default function Library() {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {filtered.map(book => (
-              <BookCard key={book.id} book={book} onDelete={setConfirmDelete} />
+              <BookCard key={book.id} book={book} onDelete={setConfirmDelete} onRate={updateRating} />
             ))}
           </div>
         )}
